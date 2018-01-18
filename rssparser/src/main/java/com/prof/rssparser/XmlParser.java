@@ -45,7 +45,6 @@ public class XmlParser {
     }
 
     public void parseXML(String xml) throws XmlPullParserException, IOException {
-
         XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 
         factory.setNamespaceAware(false);

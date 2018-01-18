@@ -40,9 +40,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.prof.rssparser.Article;
-import com.prof.rssparser.Parser;
+import com.prof.rssparser.ObservableRssFeed;
 
 import java.util.ArrayList;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by Marco Gomiero on 12/02/2015.
@@ -53,8 +59,9 @@ public class MainActivity extends AppCompatActivity {
     private ArticleAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private ProgressBar progressBar;
-    //private String urlString = "https://www.androidauthority.com/feed";
-    private String urlString = "https://www.skynewsarabia.com/web/rss/markets.xml";
+    private String urlString = "https://www.androidauthority.com/feed";
+//    private String urlString = "https://www.skynewsarabia.com/web/rss/markets.xml";
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,37 +120,46 @@ public class MainActivity extends AppCompatActivity {
         if (!mSwipeRefreshLayout.isRefreshing())
             progressBar.setVisibility(View.VISIBLE);
 
-        Parser parser = new Parser();
-        parser.execute(urlString);
-        parser.onFinish(new Parser.OnTaskCompleted() {
-            //what to do when the parsing is done
-            @Override
-            public void onTaskCompleted(ArrayList<Article> list) {
-                //list is an Array List with all article's information
-                //set the adapter to recycler view
-                mAdapter = new ArticleAdapter(list, R.layout.row, MainActivity.this);
-                mRecyclerView.setAdapter(mAdapter);
-                progressBar.setVisibility(View.GONE);
-                mSwipeRefreshLayout.setRefreshing(false);
+        mAdapter = new ArticleAdapter(new ArrayList<Article>(), R.layout.row, MainActivity.this);
+        mRecyclerView.setAdapter(mAdapter);
+        progressBar.setVisibility(View.GONE);
+        mSwipeRefreshLayout.setRefreshing(false);
 
-            }
-
-            //what to do in case of error
-            @Override
-            public void onError(Exception e) {
-
-                runOnUiThread(new Runnable() {
+        ObservableRssFeed observable = new ObservableRssFeed(urlString);
+        observable.getArticles().
+                observeOn(AndroidSchedulers.mainThread()).
+                subscribeOn(Schedulers.io()).
+                subscribe(new Observer<Article>() {
                     @Override
-                    public void run() {
-                        progressBar.setVisibility(View.GONE);
-                        mSwipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(MainActivity.this, "Unable to load data.",
-                                Toast.LENGTH_LONG).show();
-                        Log.i("Unable to load ", "articles");
+                    public void onSubscribe(Disposable d) {
+                        compositeDisposable.add(d);
                     }
+
+                    @Override
+                    public void onNext(Article article) {
+                        mAdapter.addItem(article);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                progressBar.setVisibility(View.GONE);
+                                mSwipeRefreshLayout.setRefreshing(false);
+                                Toast.makeText(MainActivity.this, "Unable to load data.",
+                                        Toast.LENGTH_LONG).show();
+                                Log.i(MainActivity.class.getName(), "Unable to load articles");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.i(MainActivity.class.getName(), "Done loading articles");
+                    }
+
                 });
-            }
-        });
     }
 
     public boolean isNetworkAvailable() {
@@ -172,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
+
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }

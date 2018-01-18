@@ -21,7 +21,7 @@ public class ObservableRssFeed implements ArticleListener, ObservableOnSubscribe
         this.URL = url;
     }
 
-    public Observable<Article> getArticles(String url) {
+    public Observable<Article> getArticles() {
         return Observable.create(this);
     }
 
@@ -36,18 +36,20 @@ public class ObservableRssFeed implements ArticleListener, ObservableOnSubscribe
     }
 
     @Override
-    public void subscribe(ObservableEmitter<Article> emitter) throws Exception {
-        this.emitter = emitter;
+    public void subscribe(ObservableEmitter<Article> e) throws Exception {
+        this.emitter = e;
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(URL)
                 .build();
         try {
             Response response = client.newCall(request).execute();
-            if (response.isSuccessful()) new XmlParser(this).parseXML(response.body().string());
-            else throw new IOException("Failed to fetch RSS feed");
-        } catch (IOException | XmlPullParserException e) {
-            e.printStackTrace();
+            if (response.isSuccessful()) {
+                new XmlParser(this).parseXML(response.body().string());
+            } else throw new IOException("Failed to fetch RSS feed");
+        } catch (IOException | XmlPullParserException exception) {
+            exception.printStackTrace();
+            emitter.onError(exception);
         }
     }
 }

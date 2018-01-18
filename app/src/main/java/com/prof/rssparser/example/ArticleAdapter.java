@@ -33,8 +33,8 @@ import com.prof.rssparser.Article;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -43,17 +43,27 @@ import java.util.Locale;
 
 public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ViewHolder> {
 
-    private ArrayList<Article> articles;
+    private List<Article> articles;
 
     private int rowLayout;
     private Context mContext;
     WebView articleView;
 
-    public ArticleAdapter(ArrayList<Article> list, int rowLayout, Context context) {
-
+    public ArticleAdapter(List<Article> list, int rowLayout, Context context) {
         this.articles = list;
         this.rowLayout = rowLayout;
         this.mContext = context;
+    }
+
+    public void addItem(Article article) {
+        articles.add(article);
+        notifyItemInserted(articles.size()-1);
+    }
+
+
+    public void addAll(List<Article> list) {
+        articles.addAll(list);
+        notifyDataSetChanged();
     }
 
 
