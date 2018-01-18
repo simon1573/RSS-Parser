@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
             //what to do in case of error
             @Override
-            public void onError() {
+            public void onError(Exception e) {
 
                 runOnUiThread(new Runnable() {
                     @Override

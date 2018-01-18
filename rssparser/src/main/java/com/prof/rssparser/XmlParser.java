@@ -27,18 +27,19 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Observable;
 
 /**
  * Created by Marco Gomiero on 12/02/2015.
  */
 
-public class XMLParser extends Observable {
+public class XmlParser {
 
     private ArrayList<Article> articles;
     private Article currentArticle;
+    private ArticleListener articleListener;
 
-    public XMLParser() {
+    public XmlParser(ArticleListener articleListener) {
+        this.articleListener = articleListener;
         articles = new ArrayList<>();
         currentArticle = new Article();
     }
@@ -120,17 +121,13 @@ public class XMLParser extends Observable {
 
             } else if (eventType == XmlPullParser.END_TAG && xmlPullParser.getName().equalsIgnoreCase("item")) {
                 insideItem = false;
+
                 articles.add(currentArticle);
+                articleListener.onParsedArticle(currentArticle);
                 currentArticle = new Article();
             }
             eventType = xmlPullParser.next();
         }
-        triggerObserver();
-    }
-
-
-    private void triggerObserver() {
-        setChanged();
-        notifyObservers(articles);
+        articleListener.onParseComplete(articles);
     }
 }
